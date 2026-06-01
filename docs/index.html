@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebWatch</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface2: #242424;
+      --border: #2e2e2e;
+      --text: #e8e8e8;
+      --text-muted: #888;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --radius: 8px;
+      --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    header .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    main { max-width: 860px; margin: 0 auto; padding: 24px; }
+
+    .setup-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .setup-banner h2 { font-size: 18px; margin-bottom: 8px; }
+    .setup-banner p { color: var(--text-muted); margin-bottom: 24px; }
+
+    .config-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .config-panel h3 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .config-grid .full { grid-column: 1 / -1; }
+
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+    input, select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      padding: 8px 10px;
+      outline: none;
+      width: 100%;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, select:focus { border-color: var(--accent); }
+    input::placeholder { color: var(--text-muted); }
+
+    button {
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 14px;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) { background: var(--surface2); color: var(--text); }
+
+    .btn-danger { background: transparent; color: var(--red); border: 1px solid transparent; }
+    .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,0.1); border-color: var(--red); }
+
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-header h2 { font-size: 15px; font-weight: 600; }
+
+    .items-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+
+    .item-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .item-card.disabled { opacity: 0.5; }
+
+    .item-name {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .item-name a { color: var(--text); text-decoration: none; }
+    .item-name a:hover { color: var(--accent); }
+
+    .item-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .tag {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    .item-value {
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .value-label { color: var(--text-muted); font-size: 12px; }
+
+    .value-text {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      max-width: 400px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .value-none { color: var(--text-muted); font-style: italic; font-size: 12px; }
+
+    .item-checked { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+    .item-actions { display: flex; gap: 6px; align-items: center; }
+
+    .toggle {
+      appearance: none;
+      width: 32px;
+      height: 18px;
+      background: var(--border);
+      border-radius: 9px;
+      cursor: pointer;
+      position: relative;
+      border: none;
+      padding: 0;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      top: 2px;
+      left: 2px;
+      transition: left 0.2s;
+    }
+
+    .toggle:checked { background: var(--accent); }
+    .toggle:checked::after { left: 16px; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+    }
+
+    .add-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .add-form h3 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 13px;
+      max-width: 320px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { border-color: var(--red); color: var(--red); }
+    .toast.success { border-color: var(--green); color: var(--green); }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 600px) {
+      .config-grid, .form-grid { grid-template-columns: 1fr; }
+      .config-grid .full, .form-grid .full { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>WebWatch</h1>
+  <div class="header-actions">
+    <button class="btn-ghost btn-sm" id="btn-config">Settings</button>
+    <button class="btn-primary btn-sm" id="btn-check-now">Check now</button>
+  </div>
+</header>
+
+<main>
+  <div id="setup-banner" class="setup-banner" style="display:none">
+    <h2>Configure WebWatch</h2>
+    <p>Enter your GitHub details below to get started. Your PAT is only stored in your browser's localStorage.</p>
+  </div>
+
+  <div id="config-panel" class="config-panel" style="display:none">
+    <h3>GitHub Configuration</h3>
+    <div class="config-grid">
+      <div class="field">
+        <label for="cfg-owner">GitHub username / org</label>
+        <input id="cfg-owner" placeholder="your-username" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="cfg-repo">Repository name</label>
+        <input id="cfg-repo" placeholder="webwatch" autocomplete="off" />
+      </div>
+      <div class="field full">
+        <label for="cfg-token">Personal Access Token (fine-grained: contents + actions write)</label>
+        <input id="cfg-token" type="password" placeholder="github_pat_…" autocomplete="off" />
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn-ghost btn-sm" id="btn-config-cancel">Cancel</button>
+      <button class="btn-primary btn-sm" id="btn-config-save">Save</button>
+    </div>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="section-header">
+      <h2>Tracked items</h2>
+      <span id="last-refresh" style="font-size:12px;color:var(--text-muted)"></span>
+    </div>
+
+    <div id="items-list" class="items-list"></div>
+
+    <div class="add-form">
+      <h3>Add item</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label for="f-name">Name</label>
+          <input id="f-name" placeholder="Product availability" />
+        </div>
+        <div class="field">
+          <label for="f-extract">Extract</label>
+          <select id="f-extract">
+            <option value="text">text content</option>
+            <option value="html">inner HTML</option>
+            <option value="href">href attribute</option>
+            <option value="src">src attribute</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="f-url">URL</label>
+          <input id="f-url" type="url" placeholder="https://example.com/product" />
+        </div>
+        <div class="field full">
+          <label for="f-selector">CSS selector</label>
+          <input id="f-selector" placeholder=".availability, #stock-status, [data-stock]" style="font-family:var(--font-mono)" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" id="btn-add">Add item</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const GITHUB_API = "https://api.github.com";
+  const ITEMS_PATH = "data/items.json";
+
+  const toBase64 = (str) => {
+    const bytes = new TextEncoder().encode(str);
+    return btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join(""));
+  };
+
+  const fromBase64 = (b64) => {
+    const binStr = atob(b64.replace(/\n/g, ""));
+    const bytes = Uint8Array.from(binStr, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  };
+
+  function loadConfig() {
+    return {
+      owner: localStorage.getItem("ww_owner") ?? "",
+      repo: localStorage.getItem("ww_repo") ?? "",
+      token: localStorage.getItem("ww_token") ?? "",
+    };
+  }
+
+  function saveConfig(owner, repo, token) {
+    localStorage.setItem("ww_owner", owner);
+    localStorage.setItem("ww_repo", repo);
+    localStorage.setItem("ww_token", token);
+  }
+
+  function isConfigured() {
+    const { owner, repo, token } = loadConfig();
+    return owner && repo && token;
+  }
+
+  async function githubFetch(path, options = {}) {
+    const { token } = loadConfig();
+    const res = await fetch(`${GITHUB_API}${path}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        ...options.headers,
+      },
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message ?? `GitHub API ${res.status}`);
+    }
+    return res.json();
+  }
+
+  let itemsSha = null;
+
+  async function readItems() {
+    const { owner, repo } = loadConfig();
+    const data = await githubFetch(`/repos/${owner}/${repo}/contents/${ITEMS_PATH}`);
+    itemsSha = data.sha;
+    return JSON.parse(fromBase64(data.content));
+  }
+
+  async function writeItems(items) {
+    const { owner, repo } = loadConfig();
+    const data = await githubFetch(`/repos/${owner}/${repo}/contents/${ITEMS_PATH}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: "chore: update tracked items",
+        content: toBase64(JSON.stringify(items, null, 2) + "\n"),
+        sha: itemsSha,
+      }),
+    });
+    itemsSha = data.content.sha;
+  }
+
+  async function triggerWorkflow() {
+    const { owner, repo } = loadConfig();
+    await githubFetch(`/repos/${owner}/${repo}/actions/workflows/check.yml/dispatches`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: "main" }),
+    });
+  }
+
+  function relativeTime(isoString) {
+    if (!isoString) return "never";
+    const diff = Date.now() - new Date(isoString).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  }
+
+  let toastTimeout = null;
+  function showToast(message, type = "info") {
+    const el = document.getElementById("toast");
+    el.textContent = message;
+    el.className = `toast show ${type}`;
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => el.classList.remove("show"), 3500);
+  }
+
+  function setLoading(btn, loading) {
+    btn.disabled = loading;
+    if (loading) {
+      btn.dataset.originalText = btn.textContent;
+      btn.innerHTML = `<span class="spinner"></span>`;
+    } else {
+      btn.textContent = btn.dataset.originalText ?? btn.textContent;
+    }
+  }
+
+  function renderItems(items) {
+    const list = document.getElementById("items-list");
+
+    if (items.length === 0) {
+      list.innerHTML = `<div class="empty-state">No items tracked yet. Add one below.</div>`;
+      return;
+    }
+
+    list.innerHTML = items
+      .map(
+        (item) => `
+      <div class="item-card ${item.enabled ? "" : "disabled"}" data-id="${item.id}">
+        <div>
+          <div class="item-name"><a href="${item.url}" target="_blank" rel="noopener">${escapeHtml(item.name)}</a></div>
+          <div class="item-meta">
+            <span class="tag">${escapeHtml(item.selector)}</span>
+            <span class="tag">${item.extract}</span>
+          </div>
+          <div class="item-value">
+            <span class="value-label">Value:</span>
+            ${
+              item.last_value !== null
+                ? `<span class="value-text" title="${escapeHtml(item.last_value)}">${escapeHtml(item.last_value)}</span>`
+                : `<span class="value-none">pending first check</span>`
+            }
+          </div>
+          <div class="item-checked">Last checked: ${relativeTime(item.last_checked)}</div>
+        </div>
+        <div class="item-actions">
+          <input type="checkbox" class="toggle" data-action="toggle" title="Enable/disable" ${item.enabled ? "checked" : ""} />
+          <button class="btn-danger btn-sm" data-action="delete">Delete</button>
+        </div>
+      </div>
+    `
+      )
+      .join("");
+
+    list.querySelectorAll("[data-action='toggle']").forEach((el) => {
+      el.addEventListener("change", async (e) => {
+        const card = e.target.closest("[data-id]");
+        await updateItem(card.dataset.id, { enabled: e.target.checked });
+      });
+    });
+
+    list.querySelectorAll("[data-action='delete']").forEach((el) => {
+      el.addEventListener("click", async (e) => {
+        const card = e.target.closest("[data-id]");
+        if (confirm("Delete this tracked item?")) {
+          await deleteItem(card.dataset.id);
+        }
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  let currentItems = [];
+
+  async function refresh() {
+    try {
+      currentItems = await readItems();
+      renderItems(currentItems);
+      document.getElementById("last-refresh").textContent = `Refreshed ${relativeTime(new Date().toISOString())}`;
+    } catch (err) {
+      showToast(`Failed to load: ${err.message}`, "error");
+    }
+  }
+
+  async function updateItem(id, patch) {
+    try {
+      const updated = currentItems.map((item) =>
+        item.id === id ? { ...item, ...patch } : item
+      );
+      await writeItems(updated);
+      currentItems = updated;
+      renderItems(currentItems);
+      showToast("Saved", "success");
+    } catch (err) {
+      showToast(`Failed to save: ${err.message}`, "error");
+      await refresh();
+    }
+  }
+
+  async function deleteItem(id) {
+    try {
+      const updated = currentItems.filter((item) => item.id !== id);
+      await writeItems(updated);
+      currentItems = updated;
+      renderItems(currentItems);
+      showToast("Deleted", "success");
+    } catch (err) {
+      showToast(`Failed to delete: ${err.message}`, "error");
+    }
+  }
+
+  function initUI() {
+    const configured = isConfigured();
+
+    document.getElementById("setup-banner").style.display = configured ? "none" : "block";
+    document.getElementById("app").style.display = configured ? "block" : "none";
+
+    if (configured) refresh();
+  }
+
+  document.getElementById("btn-config").addEventListener("click", () => {
+    const panel = document.getElementById("config-panel");
+    const visible = panel.style.display !== "none";
+    panel.style.display = visible ? "none" : "block";
+
+    if (!visible) {
+      const { owner, repo, token } = loadConfig();
+      document.getElementById("cfg-owner").value = owner;
+      document.getElementById("cfg-repo").value = repo;
+      document.getElementById("cfg-token").value = token;
+    }
+  });
+
+  document.getElementById("btn-config-cancel").addEventListener("click", () => {
+    document.getElementById("config-panel").style.display = "none";
+  });
+
+  document.getElementById("btn-config-save").addEventListener("click", () => {
+    const owner = document.getElementById("cfg-owner").value.trim();
+    const repo = document.getElementById("cfg-repo").value.trim();
+    const token = document.getElementById("cfg-token").value.trim();
+
+    if (!owner || !repo || !token) {
+      showToast("All fields required", "error");
+      return;
+    }
+
+    saveConfig(owner, repo, token);
+    document.getElementById("config-panel").style.display = "none";
+    initUI();
+    showToast("Settings saved", "success");
+  });
+
+  document.getElementById("btn-check-now").addEventListener("click", async (e) => {
+    if (!isConfigured()) {
+      document.getElementById("config-panel").style.display = "block";
+      return;
+    }
+    setLoading(e.currentTarget, true);
+    try {
+      await triggerWorkflow();
+      showToast("Check triggered — results in ~30s", "success");
+      setTimeout(refresh, 35000);
+    } catch (err) {
+      showToast(`Failed: ${err.message}`, "error");
+    } finally {
+      setLoading(e.currentTarget, false);
+    }
+  });
+
+  document.getElementById("btn-add").addEventListener("click", async (e) => {
+    const name = document.getElementById("f-name").value.trim();
+    const url = document.getElementById("f-url").value.trim();
+    const selector = document.getElementById("f-selector").value.trim();
+    const extract = document.getElementById("f-extract").value;
+
+    if (!name || !url || !selector) {
+      showToast("Name, URL and selector are required", "error");
+      return;
+    }
+
+    try { new URL(url); } catch {
+      showToast("Invalid URL", "error");
+      return;
+    }
+
+    setLoading(e.currentTarget, true);
+    try {
+      const newItem = {
+        id: crypto.randomUUID(),
+        name,
+        url,
+        selector,
+        extract,
+        last_value: null,
+        last_checked: null,
+        created_at: new Date().toISOString(),
+        enabled: true,
+      };
+      const updated = [...currentItems, newItem];
+      await writeItems(updated);
+      currentItems = updated;
+      renderItems(currentItems);
+
+      document.getElementById("f-name").value = "";
+      document.getElementById("f-url").value = "";
+      document.getElementById("f-selector").value = "";
+      document.getElementById("f-extract").value = "text";
+
+      showToast("Item added — will be checked on next run", "success");
+    } catch (err) {
+      showToast(`Failed to add: ${err.message}`, "error");
+    } finally {
+      setLoading(e.currentTarget, false);
+    }
+  });
+
+  initUI();
+</script>
+</body>
+</html>
