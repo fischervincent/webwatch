@@ -538,7 +538,36 @@
 
     list.innerHTML = items
       .map(
-        (item) => `
+        (item) => editingId === item.id ? `
+      <div class="item-card" data-id="${item.id}">
+        <div style="width:100%">
+          <div class="form-grid" style="margin-bottom:12px">
+            <div class="field">
+              <label>Name</label>
+              <input class="edit-name" value="${escapeHtml(item.name)}" />
+            </div>
+            <div class="field">
+              <label>Extract</label>
+              <select class="edit-extract">
+                ${["text","html","href","src"].map(v => `<option value="${v}" ${item.extract === v ? "selected" : ""}>${v === "text" ? "text content" : v === "html" ? "inner HTML" : v + " attribute"}</option>`).join("")}
+              </select>
+            </div>
+            <div class="field full">
+              <label>URL</label>
+              <input class="edit-url" type="url" value="${escapeHtml(item.url)}" />
+            </div>
+            <div class="field full">
+              <label>CSS selector</label>
+              <input class="edit-selector" value="${escapeHtml(item.selector)}" style="font-family:var(--font-mono)" />
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn-ghost btn-sm" data-action="edit-cancel">Cancel</button>
+            <button class="btn-primary btn-sm" data-action="edit-save">Save</button>
+          </div>
+        </div>
+      </div>
+        ` : `
       <div class="item-card ${item.enabled ? "" : "disabled"}" data-id="${item.id}">
         <div>
           <div class="item-name"><a href="${item.url}" target="_blank" rel="noopener">${escapeHtml(item.name)}</a></div>
@@ -559,14 +588,44 @@
           <div class="item-checked">Last checked: ${relativeTime(item.last_checked)}</div>
         </div>
         <div class="item-actions">
+          <button class="btn-ghost btn-sm" data-action="edit">Edit</button>
           <button class="btn-ghost btn-sm" data-action="run" title="Check now">Run</button>
           <input type="checkbox" class="toggle" data-action="toggle" title="Enable/disable" ${item.enabled ? "checked" : ""} />
           <button class="btn-danger btn-sm" data-action="delete">Delete</button>
         </div>
       </div>
-    `
+        `
       )
       .join("");
+
+    list.querySelectorAll("[data-action='edit']").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        editingId = e.target.closest("[data-id]").dataset.id;
+        renderItems(currentItems);
+      });
+    });
+
+    list.querySelectorAll("[data-action='edit-cancel']").forEach((el) => {
+      el.addEventListener("click", () => {
+        editingId = null;
+        renderItems(currentItems);
+      });
+    });
+
+    list.querySelectorAll("[data-action='edit-save']").forEach((el) => {
+      el.addEventListener("click", async (e) => {
+        const card = e.target.closest("[data-id]");
+        const id = card.dataset.id;
+        const name = card.querySelector(".edit-name").value.trim();
+        const url = card.querySelector(".edit-url").value.trim();
+        const selector = card.querySelector(".edit-selector").value.trim();
+        const extract = card.querySelector(".edit-extract").value;
+        if (!name || !url || !selector) { showToast("All fields required", "error"); return; }
+        try { new URL(url); } catch { showToast("Invalid URL", "error"); return; }
+        editingId = null;
+        await updateItem(id, { name, url, selector, extract, last_value: null, last_checked: null });
+      });
+    });
 
     list.querySelectorAll("[data-action='toggle']").forEach((el) => {
       el.addEventListener("change", async (e) => {
@@ -612,6 +671,7 @@
   }
 
   const pollingIds = new Set();
+  let editingId = null;
 
   async function pollForBaseline(itemId) {
     const maxAttempts = 24;
