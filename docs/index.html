@@ -216,6 +216,14 @@
 
     .value-none { color: var(--text-muted); font-style: italic; font-size: 12px; }
 
+    .value-checking {
+      color: var(--accent);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .item-checked { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
 
     .item-actions { display: flex; gap: 6px; align-items: center; }
@@ -540,14 +548,17 @@
           <div class="item-value">
             <span class="value-label">Value:</span>
             ${
-              item.last_value !== null
-                ? `<span class="value-text" title="${escapeHtml(item.last_value)}">${escapeHtml(item.last_value)}</span>`
-                : `<span class="value-none">pending first check</span>`
+              pollingIds.has(item.id)
+                ? `<span class="value-checking"><span class="spinner"></span> checking…</span>`
+                : item.last_value !== null
+                  ? `<span class="value-text" title="${escapeHtml(item.last_value)}">${escapeHtml(item.last_value)}</span>`
+                  : `<span class="value-none">pending first check</span>`
             }
           </div>
           <div class="item-checked">Last checked: ${relativeTime(item.last_checked)}</div>
         </div>
         <div class="item-actions">
+          <button class="btn-ghost btn-sm" data-action="run" title="Check now">Run</button>
           <input type="checkbox" class="toggle" data-action="toggle" title="Enable/disable" ${item.enabled ? "checked" : ""} />
           <button class="btn-danger btn-sm" data-action="delete">Delete</button>
         </div>
@@ -560,6 +571,24 @@
       el.addEventListener("change", async (e) => {
         const card = e.target.closest("[data-id]");
         await updateItem(card.dataset.id, { enabled: e.target.checked });
+      });
+    });
+
+    list.querySelectorAll("[data-action='run']").forEach((el) => {
+      el.addEventListener("click", async (e) => {
+        const card = e.target.closest("[data-id]");
+        const id = card.dataset.id;
+        if (pollingIds.has(id)) return;
+        e.currentTarget.disabled = true;
+        try {
+          await triggerWorkflow();
+          pollingIds.add(id);
+          renderItems(currentItems);
+          pollForBaseline(id);
+        } catch (err) {
+          showToast(`Failed: ${err.message}`, "error");
+          e.currentTarget.disabled = false;
+        }
       });
     });
 
@@ -579,6 +608,35 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  const pollingIds = new Set();
+
+  async function pollForBaseline(itemId) {
+    const maxAttempts = 24;
+    let attempts = 0;
+
+    const intervalId = setInterval(async () => {
+      attempts++;
+      try {
+        const items = await readItems();
+        const item = items.find((i) => i.id === itemId);
+        if (item && item.last_value !== null) {
+          clearInterval(intervalId);
+          pollingIds.delete(itemId);
+          currentItems = items;
+          renderItems(currentItems);
+          showToast(`Confirmed: "${item.last_value}"`, "success");
+        } else if (attempts >= maxAttempts) {
+          clearInterval(intervalId);
+          pollingIds.delete(itemId);
+          renderItems(currentItems);
+          showToast("Check timed out — selector may not match", "error");
+        }
+      } catch {
+        // ignore transient polling errors
+      }
+    }, 5000);
   }
 
   let currentItems = [];
@@ -718,7 +776,15 @@
       document.getElementById("f-selector").value = "";
       document.getElementById("f-extract").value = "text";
 
-      showToast("Item added — will be checked on next run", "success");
+      pollingIds.add(newItem.id);
+      renderItems(currentItems);
+      try {
+        await triggerWorkflow();
+      } catch {
+        // workflow dispatch failure doesn't block — cron will pick it up
+      }
+      pollForBaseline(newItem.id);
+      showToast("Added — confirming value (~30s)…", "success");
     } catch (err) {
       showToast(`Failed to add: ${err.message}`, "error");
     } finally {
