@@ -5,8 +5,8 @@
     "url": "https://belledonne.com/en/products/b0-hairy-grey?variant=52636913303881",
     "selector": ".product__inventory",
     "extract": "text",
-    "last_value": "Out of stock",
-    "last_checked": "2026-06-01T11:33:48.647Z",
+    "last_value": null,
+    "last_checked": null,
     "created_at": "2026-06-01T11:26:23.838Z",
     "enabled": true
   }
