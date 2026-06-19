@@ -6,7 +6,7 @@
     "selector": ".product__inventory",
     "extract": "text",
     "last_value": "Out of stock",
-    "last_checked": "2026-06-19T07:56:17.018Z",
+    "last_checked": "2026-06-19T09:38:13.796Z",
     "created_at": "2026-06-01T11:26:23.838Z",
     "enabled": true
   }
